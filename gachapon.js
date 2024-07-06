@@ -2,7 +2,19 @@
 class Gachapon extends Phaser.Scene {
   itemList = []
   confWindow = null
-  gachaRate = []
+  rollBtn = null
+
+  onChangeName(index) {
+    return (e) => {
+      this.itemList[index].name = e.target.value
+    }
+  }
+
+  onChangeRarity(index) {
+    return (e) => {
+      this.itemList[index].rarity = parseInt(e.target.value)
+    }
+  }
 
   onLoadThumb(index) {
     return (e) => {
@@ -11,7 +23,7 @@ class Gachapon extends Phaser.Scene {
         this.confWindow.add(thumb)
         thumb.displayWidth = 32
         thumb.displayHeight = 32
-        thumb.x = 215
+        thumb.x = 200
         thumb.y = 45 + 32 * index
       })
       this.textures.addBase64(`thumb${index}`, e.target.result)
@@ -28,13 +40,45 @@ class Gachapon extends Phaser.Scene {
   }
 
   addItemToList(x, y) {
-    const textbox = this.add.dom(x, y, 'input')
-    this.confWindow.add(textbox)
+    const textbox = document.createElement('input')
+    textbox.setAttribute('style', 'width: 100px')
+    const textboxGO = this.add.dom(x, y, textbox)
+    this.confWindow.add(textboxGO)
+    textbox.addEventListener('change', this.onChangeName(this.itemList.length))
+    
+    const rarity = document.createElement('input')
+    rarity.setAttribute('type', 'number')
+    rarity.setAttribute('style', 'width: 50px')
+    const rarityGO = this.add.dom(x + 90,y, rarity)
+    this.confWindow.add(rarityGO)
+    rarity.addEventListener('change', this.onChangeRarity(this.itemList.length))
+    
     const fileInput = document.createElement('input')
     fileInput.setAttribute('type', 'file')
     fileInput.addEventListener('change', this.onChooseThumb(this.itemList.length))
     fileInput.click()
-    this.itemList.push(textbox)
+
+    this.itemList.push({name: '', rarity: 0, index:this.itemList.length})
+  }
+
+  doRoll() {
+    console.log(this.itemList)
+    this.rollBtn.visible = false
+    const deck = []
+    for(let i=0; i<this.itemList.length; i++) {
+      for(let j=0; j<this.itemList[i].rarity; j++) {
+        deck.push(this.itemList[i])
+      }
+    }
+    Phaser.Utils.Array.Shuffle(deck)
+    const rollDuration = 5
+    const showDuration = rollDuration/deck.length
+    
+    const result = Math.floor(Math.random() * deck.length)
+    const name = this.add.text(400, 200, deck.name)
+    const image = this.add.image(320, 80, `thumb${deck[result].index}`)
+    image.displayWidth = 160
+    image.displayHeight = 160
   }
 
   create() {
@@ -51,13 +95,22 @@ class Gachapon extends Phaser.Scene {
     this.confWindow = this.add.container(0, 100)
     const addButton = this.add.text(10, 10, 'ADD', {backgroundColor: '#00A000'})
       .setInteractive()
-      .on('pointerup', () => {this.addItemToList(100, 45 + 32 * this.itemList.length)})
+      .on('pointerup', () => {this.addItemToList(60, 45 + 32 * this.itemList.length)})
     this.confWindow.add(addButton)
 
     const goButton = this.add.text(60, 10, 'GO', {backgroundColor: '#A0A000'})
-      .setInteractive()
-      .on('pointerup', () => console.log('READ CONF and GO'))
+    .setInteractive()
+    .on('pointerup', () => {
+      this.confWindow.visible = false
+      this.rollBtn.visible = true
+      console.log(this.rollBtn.visible)
+    })
     this.confWindow.add(goButton)
+    
+    this.rollBtn = this.add.text(340, 400, 'ROLL', {backgroundColor: '#35A420'})
+      .setInteractive()
+      .on('pointerup', this.doRoll.bind(this))
+    this.rollBtn.visible = false
   }
 }
   
